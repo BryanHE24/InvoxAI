@@ -1,0 +1,137 @@
+/* frontend/src/components/invoices/InvoiceList.css */
+.invoice-list-container.card-invo {
+    background-color: var(--color-surface-card);
+    padding: var(--space-lg);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-card);
+    margin-top: var(--space-lg);
+  }
+  
+  .table-responsive-container {
+    overflow-x: auto;
+  }
+  
+  .invoice-table {
+    width: 100%;
+    border-collapse: collapse; 
+    font-family: var(--font-secondary);
+    font-size: 0.9rem; 
+  }
+  
+  .invoice-table th,
+  .invoice-table td {
+    border-bottom: 1px solid var(--border-color); 
+    padding: var(--space-sm) var(--space-md); 
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap; 
+  }
+  .invoice-table td:first-child, .invoice-table th:first-child { padding-left: 0; }
+  .invoice-table td:last-child, .invoice-table th:last-child { padding-right: 0; text-align: right;} 
+  
+  .invoice-table th {
+    background-color: transparent; 
+    font-weight: 600;
+    color: var(--text-secondary); 
+    text-transform: uppercase;
+    font-size: 0.75rem; 
+    letter-spacing: 0.5px;
+    border-bottom-width: 2px; 
+  }
+  
+  .invoice-table td {
+    color: var(--text-primary);
+  }
+  .invoice-table td a { /* For the filename link */
+    color: var(--text-link);
+    font-weight: 500;
+  }
+  .invoice-table td a:hover {
+    color: var(--color-primary-accent-dark);
+    text-decoration: underline;
+  }
+  
+  .invoice-table tbody tr {
+      border-bottom: 1px solid var(--border-color-light); 
+  }
+  .invoice-table tbody tr:last-child td {
+      border-bottom: none; 
+  }
+  .invoice-table tbody tr:hover {
+    background-color: var(--color-primary-accent-light); 
+  }
+  
+  .no-invoices-message { /* ... (same as before) ... */ }
+  
+  .status-badge { /* ... (same as before, using color-mix for softer status badges) ... */
+    padding: var(--space-xxs) var(--space-sm); 
+    border-radius: var(--border-radius-sm); 
+    font-size: 0.75rem; 
+    font-weight: 600; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px;
+    display: inline-block; 
+    border: 1px solid transparent;
+  }
+  .status-processed { background-color: color-mix(in srgb, var(--color-success, #28a745) 15%, transparent); color: color-mix(in srgb, var(--color-success, #28a745) 80%, black); border-color: color-mix(in srgb, var(--color-success, #28a745) 40%, transparent); }
+  .status-pending-s3-upload, .status-pending-textract-submission, .status-processing-textract { 
+    background-color: color-mix(in srgb, var(--color-info, #17a2b8) 15%, transparent); color: color-mix(in srgb, var(--color-info, #17a2b8) 80%, black); border-color: color-mix(in srgb, var(--color-info, #17a2b8) 40%, transparent);
+  }
+  .status-s3-upload-failed, .status-textract-submission-failed, .status-textract-failed, .status-parsing-failed, .status-error, .status-db-update-failed-post-textract, .status-textract-unknown-status {
+    background-color: color-mix(in srgb, var(--color-error, #dc3545) 15%, transparent); color: color-mix(in srgb, var(--color-error, #dc3545) 80%, black); border-color: color-mix(in srgb, var(--color-error, #dc3545) 40%, transparent);
+  }
+  
+  
+  /* Action Buttons in Table */
+  .invoice-actions {
+    display: flex;
+    gap: var(--space-xs); 
+    justify-content: flex-end; 
+  }
+  .invoice-actions .action-button {
+    padding: var(--space-xs) var(--space-sm); /* 4px 8px - smaller buttons */
+    font-size: 0.8rem; /* Smaller text */
+    text-decoration: none;
+    white-space: nowrap;
+    border-radius: var(--border-radius-button); /* Use global button radius */
+    font-weight: 500;
+    transition: var(--transition-fast);
+    border-width: 1px; /* All buttons will have a border */
+    border-style: solid;
+  }
+  
+  /* Default/View Button - Using a secondary/outline style */
+  .invoice-actions .view-button {
+    background-color: var(--color-surface-card); /* White/card background */
+    border-color: var(--border-color-input); /* Subtle border */
+    color: var(--text-secondary); /* Muted text */
+  }
+  .invoice-actions .view-button:hover {
+    background-color: var(--color-bg-main); /* Slightly off-white, like page bg */
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+  }
+  
+  /* Process Result Button - Positive/Accent style */
+  .invoice-actions .process-button {
+    background-color: color-mix(in srgb, var(--color-success, #28a745) 15%, var(--color-surface-card)); /* Light green tint */
+    border-color: color-mix(in srgb, var(--color-success, #28a745) 50%, transparent);
+    color: color-mix(in srgb, var(--color-success, #28a745) 90%, black); /* Darker green text */
+  }
+  .invoice-actions .process-button:hover {
+    background-color: color-mix(in srgb, var(--color-success, #28a745) 25%, var(--color-surface-card));
+    border-color: var(--color-success, #28a745);
+    color: color-mix(in srgb, var(--color-success, #28a745) 100%, black);
+  }
+  
+  /* Delete Button - Danger/Warning style */
+  .invoice-actions .delete-button {
+    background-color: color-mix(in srgb, var(--color-error, #dc3545) 10%, var(--color-surface-card)); /* Light red tint */
+    border-color: color-mix(in srgb, var(--color-error, #dc3545) 50%, transparent);
+    color: var(--color-error, #dc3545); /* Red text */
+  }
+  .invoice-actions .delete-button:hover {
+    background-color: color-mix(in srgb, var(--color-error, #dc3545) 20%, var(--color-surface-card));
+    border-color: var(--color-error, #dc3545);
+    color: color-mix(in srgb, var(--color-error, #dc3545) 100%, black); /* Darker red text */
+  }
