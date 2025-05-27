@@ -60,8 +60,6 @@ InvoxAI addresses the common business challenge of manual invoice processing by 
   - Notable trends and anomalies
   - Filtering by vendor, category, and date range
 - **Comprehensive Overview Reports**: All-time financial summaries
-- **PDF Export Capability**: Professional PDF generation using WeasyPrint
-- **Customizable Templates**: Flexible report formatting and branding
 
 ### Modern User Experience
 - **"Invo." Inspired Design**: Clean, professional interface with:
@@ -91,7 +89,6 @@ Flask-CORS                - Cross-origin resource sharing
 Python-dotenv             - Environment variable management
 Boto3 SDK                 - AWS services integration
 OpenAI Python SDK         - GPT model integration
-WeasyPrint                - PDF generation from HTML/CSS
 MySQL Connector           - Database connectivity
 ```
 
@@ -103,7 +100,7 @@ AWS S3                    - Secure document storage
 MySQL                     - Relational data persistence
 ```
 
-## ⚙Installation & Setup
+## Installation & Setup
 
 ### Prerequisites
 
@@ -122,7 +119,7 @@ Before starting, ensure you have:
 ```bash
 # Clone the repository
 git clone https://github.com/BryanHE24/InvoxAI/
-cd invoxai
+cd InvoxAI
 
 # Verify project structure
 ls -la
