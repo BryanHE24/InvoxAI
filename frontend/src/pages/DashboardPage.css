@@ -1,0 +1,340 @@
+/* frontend/src/pages/DashboardPage.css */
+
+/* Container */
+.dashboard-page-invo {
+  padding: 2rem;
+  background-color: var(--color-background, #f8f9fa);
+  min-height: 100vh;
+}
+
+/* Header */
+.page-header-invo h1 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  color: var(--text-primary, #2c3e50);
+  text-align: left;
+}
+
+/* Summary/Error/Loading */
+.dashboard-loading,
+.dashboard-error-summary {
+  padding: 2rem;
+  background-color: var(--color-surface-card, #ffffff);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+  color: var(--text-secondary, #64748b);
+  text-align: center;
+  margin-bottom: 2rem;
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.dashboard-error-summary h4 {
+  color: var(--color-error, #ef4444);
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+/* Stat Cards */
+.summary-cards-grid-invo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.stat-card-invo {
+  padding: 2rem;
+  background-color: var(--color-surface-card, #ffffff);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+  transition: all 0.3s ease;
+  border: 1px solid var(--border-color, #e2e8f0);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card-invo::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6, #06b6d4);
+}
+
+.stat-card-invo:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg, 0 20px 25px -5px rgba(0, 0, 0, 0.1));
+  border-color: var(--color-primary-accent, #3b82f6);
+}
+
+.card-title-invo {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #64748b);
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.card-value-invo {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: var(--text-primary, #1e293b);
+  line-height: 1.2;
+}
+
+/* AI Insights */
+.ai-insight-panel-invo {
+  padding: 2rem;
+  background-color: var(--color-surface-card, #ffffff);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+  margin-bottom: 3rem;
+  border: 1px solid var(--border-color, #e2e8f0);
+  position: relative;
+}
+
+.ai-insight-panel-invo::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #8b5cf6, #06b6d4);
+}
+
+.panel-title-invo { /* Shared by AI panel and Chart panels */
+  font-size: 1.25rem; /* Default for AI panel title */
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ai-summary-text-invo {
+  font-size: 1rem;
+  color: var(--text-secondary, #475569);
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.ai-summary-text-invo span {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.error-message-invo {
+  color: var(--color-error, #ef4444);
+  font-weight: 500;
+  padding: 1rem;
+  background-color: rgba(239, 68, 68, 0.1);
+  border-radius: 8px;
+  border-left: 4px solid var(--color-error, #ef4444);
+}
+
+.no-data-invo {
+  font-size: 1rem;
+  font-style: italic;
+  color: var(--text-secondary, #64748b);
+  text-align: center;
+  margin: 2rem 0; /* Add some margin if it's the only content in a panel */
+  padding: 2rem;
+  background-color: var(--color-background-muted, #f8f9fa); /* Slightly different background if needed */
+  border-radius: 12px;
+  border: 2px dashed var(--border-color, #e2e8f0);
+  /* Ensure no-data message doesn't collapse chart panel too much */
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1; /* Allows it to take space in flex parent (chart-panel-invo) */
+}
+
+/* Charts Grid */
+.charts-grid-invo {
+  display: grid;
+  grid-template-columns: 1fr; /* Default for mobile */
+  gap: 2rem;
+}
+
+@media (min-width: 768px) { /* Medium screens */
+  .charts-grid-invo {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1200px) { /* Large screens */
+  .charts-grid-invo {
+    /* grid-template-rows: auto auto; -- Let content define row heights or set explicit if needed */
+  }
+  
+  .line-chart-container-invo { /* This is the panel that spans two columns */
+    grid-column: span 2;
+  }
+}
+
+/* Chart Panels */
+.chart-panel-invo {
+  padding: 2rem;
+  background-color: var(--color-surface-card, #ffffff);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+  height: 450px; /* Consistent height for all chart panels */
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color, #e2e8f0);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden; /* Good for ::before pseudo-elements */
+}
+
+.chart-panel-invo::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px; /* Decorative top border */
+  background: linear-gradient(90deg, var(--color-primary-accent, #3b82f6), var(--color-secondary-accent, #06b6d4), var(--color-tertiary-accent, #8b5cf6));
+}
+
+.chart-panel-invo:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg, 0 20px 25px -5px rgba(0, 0, 0, 0.1));
+}
+
+.chart-panel-invo .panel-title-invo { /* Style for titles inside chart panels */
+  font-size: 1.125rem; /* Slightly smaller than AI panel title */
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+  margin-bottom: 1.5rem; /* Space between title and chart */
+  margin-top: 0.5rem; /* Align with ::before element */
+}
+
+.chart-panel-invo .chart-container {
+  flex: 1; /* Allows the chart container to take remaining space */
+  position: relative; /* For Chart.js canvas positioning */
+  min-height: 0; /* Crucial for flex item to shrink properly if content overflows */
+  display: flex; /* To center canvas or handle no-data message */
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-panel-invo canvas {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: 100% !important;  /* Ensure canvas tries to fill its container */
+  height: 100% !important; /* Ensure canvas tries to fill its container */
+}
+
+/*
+Specific chart container adjustments - THESE ARE NOW REMOVED/COMMENTED
+TO ENSURE CONSISTENT HEIGHTS BASED ON THE .chart-panel-invo height AND
+.chart-container flex:1 BEHAVIOR.
+*/
+/*
+.line-chart-container-invo {
+  height: 400px;
+}
+
+.line-chart-container-invo .chart-container {
+  height: 320px;
+}
+*/
+
+/* Responsive Design Adjustments */
+@media (max-width: 768px) {
+  .dashboard-page-invo {
+    padding: 1rem;
+  }
+  
+  .page-header-invo h1 {
+    font-size: 1.875rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .summary-cards-grid-invo {
+    grid-template-columns: 1fr; /* Stack cards on smaller screens */
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  
+  .stat-card-invo,
+  .ai-insight-panel-invo {
+    padding: 1.5rem;
+  }
+
+  .ai-insight-panel-invo {
+    margin-bottom: 2rem;
+  }
+  
+  .chart-panel-invo {
+    height: 350px; /* Adjust height for smaller screens if needed */
+    padding: 1.5rem;
+  }
+  
+  .charts-grid-invo {
+    gap: 1.5rem;
+  }
+
+  .panel-title-invo {
+    font-size: 1.1rem; /* Slightly smaller titles on mobile */
+  }
+  .chart-panel-invo .panel-title-invo {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-page-invo {
+    padding: 0.75rem;
+  }
+  
+  .page-header-invo h1 {
+    font-size: 1.5rem;
+  }
+  
+  .card-value-invo {
+    font-size: 1.875rem;
+  }
+  
+  .chart-panel-invo {
+    height: 300px; /* Further adjust height */
+    padding: 1rem;
+  }
+  .no-data-invo {
+    padding: 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Loading Animation */
+.dashboard-loading { /* This class is also used as a card-like container */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+.dashboard-loading::before { /* Spinner animation */
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--color-primary-accent-light, #93c5fd);
+  border-top-color: var(--color-primary-accent, #3b82f6);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 0.75rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

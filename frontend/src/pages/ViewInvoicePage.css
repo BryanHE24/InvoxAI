@@ -1,0 +1,6 @@
+/* frontend/src/pages/ViewInvoicePage.css */
+.view-invoice-page-container {
+    max-width: 1000px; /* Or your preferred width for detail view */
+    margin: 0 auto;
+    padding: 20px;
+  }

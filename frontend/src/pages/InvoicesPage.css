@@ -1,0 +1,49 @@
+/* frontend/src/pages/InvoicesPage.css */
+.invoices-page-container {
+  /* Using padding from .main-page-content-invo in Layout.css */
+}
+
+.page-header-invo { /* For the "All Invoices" title and Refresh button */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg); /* 24px */
+}
+
+.page-header-invo h1 {
+  font-size: 1.75rem; /* ~28px */
+  color: var(--text-primary);
+  font-weight: 600;
+  margin: 0;
+}
+
+.refresh-button { /* This will use .button-secondary from index.css */
+  font-size: 0.9rem;
+  padding: var(--space-xs) var(--space-md); /* Slightly smaller padding */
+}
+
+.loading-message.card-invo, /* Apply card styling to messages */
+.error-message.card-invo,
+.success-message.card-invo,
+.action-feedback-message.card-invo {
+  text-align: center;
+  padding: var(--space-md);
+  margin: var(--space-lg) 0;
+  border-radius: var(--border-radius-base);
+  background-color: var(--color-surface-card);
+  box-shadow: var(--shadow-card);
+  font-weight: 500;
+}
+
+.error-message.card-invo,
+.action-feedback-message.error-message { /* More specific for error feedback */
+  color: var(--color-error);
+  background-color: color-mix(in srgb, var(--color-error) 10%, white);
+  border: 1px solid color-mix(in srgb, var(--color-error) 30%, white);
+}
+.success-message.card-invo,
+.action-feedback-message.success-message { /* More specific for success feedback */
+  color: var(--color-success);
+  background-color: color-mix(in srgb, var(--color-success) 10%, white);
+  border: 1px solid color-mix(in srgb, var(--color-success) 30%, white);
+}
