@@ -1,0 +1,107 @@
+/* frontend/src/components/layout/Sidebar.css */
+.app-sidebar-invo {
+    width: 260px; 
+    background-color: var(--color-bg-sidebar); /* White */
+    height: 100vh; 
+    position: fixed;
+    top: 0;
+    left: 0;
+    padding: var(--space-lg) 0; /* Padding top/bottom, no side for internal padding of items */
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    z-index: 1010; 
+  }
+  
+  .sidebar-header-invo {
+    display: flex;
+    align-items: center;
+    padding: 0 var(--space-lg) var(--space-lg) var(--space-lg); /* Padding around logo/brand */
+    margin-bottom: var(--space-md);
+  }
+  .sidebar-logo-invo {
+    margin-right: var(--space-sm);
+  }
+  .sidebar-brand-name-invo {
+    font-family: var(--font-primary);
+    font-size: 1.5rem; /* 24px */
+    font-weight: 700;
+    color: var(--text-primary); /* Dark text for brand on white sidebar */
+  }
+  
+  .sidebar-navigation-invo {
+    flex-grow: 1;
+    overflow-y: auto;
+  }
+  .menu-group-title-invo {
+      padding: var(--space-md) var(--space-xl) var(--space-xs) var(--space-xl);
+      font-size: 0.75rem; /* 12px */
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+  }
+  
+  .sidebar-menu-list-invo {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .sidebar-menu-list-invo li {
+      padding: 0 var(--space-md); /* Padding for the li around the link */
+  }
+  
+  .sidebar-menu-item-invo {
+    display: flex;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md); /* 10px 16px padding inside link */
+    margin-bottom: var(--space-xs); /* 4px gap */
+    color: var(--text-secondary); /* Default item color */
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem; /* ~14.4px */
+    border-radius: var(--border-radius-base); /* Rounded items */
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+  }
+  
+  .sidebar-menu-item-invo:hover {
+    background-color: var(--color-primary-accent-light); /* Light blue hover */
+    color: var(--color-primary-accent-dark);
+  }
+  .sidebar-menu-item-invo:hover .sidebar-menu-icon-invo {
+      color: var(--color-primary-accent-dark);
+  }
+  
+  .sidebar-menu-item-invo.active {
+    background-color: var(--color-primary-accent); /* Solid blue active */
+    color: var(--text-light); /* White text on active */
+    font-weight: 600;
+    box-shadow: var(--shadow-button); /* Subtle shadow for active item */
+  }
+  .sidebar-menu-item-invo.active .sidebar-menu-icon-invo {
+      color: var(--text-light); /* Icon also white */
+  }
+  
+  .sidebar-menu-icon-invo {
+    margin-right: var(--space-md); /* 16px */
+    font-size: 1.125rem; /* ~18px icon size */
+    min-width: 20px; /* For alignment */
+    display: flex;
+    align-items: center;
+    color: var(--text-secondary); /* Default icon color */
+    transition: color var(--transition-fast);
+  }
+  
+  .sidebar-menu-label-invo {
+    flex-grow: 1;
+  }
+  
+  .sidebar-footer-invo {
+      padding: var(--space-md) 0 var(--space-lg) 0; /* Padding top/bottom for footer items */
+      margin-top: auto; /* Pushes to bottom */
+      border-top: 1px solid var(--border-color);
+  }
+  /* Ensure bottom items also use the same styling if needed */
+  .sidebar-footer-invo .sidebar-menu-list-invo li {
+      padding: 0 var(--space-md);
+  }

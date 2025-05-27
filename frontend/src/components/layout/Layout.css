@@ -1,0 +1,24 @@
+/* frontend/src/components/layout/Layout.css */
+.app-layout-invo {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--color-bg-main); 
+  }
+  
+  .app-content-area-invo {
+    flex-grow: 1;
+    margin-left: 260px; /* Width of the Sidebar */
+    display: flex;
+    flex-direction: column; 
+    overflow-x: hidden; 
+  }
+  
+  /* Navbar is now the first child of app-content-area-invo,
+     its own CSS (.content-area-header) defines its height and bottom margin */
+  
+  .main-page-content-invo {
+    /* No top padding needed here if Navbar above it has margin-bottom */
+    padding: 0 var(--space-xl) var(--space-xl) var(--space-xl); /* Horizontal and bottom padding */
+    flex-grow: 1;
+    overflow-y: auto; 
+  }

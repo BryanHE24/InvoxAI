@@ -1,0 +1,19 @@
+/* frontend/src/components/layout/Navbar.css */
+.content-area-topbar-minimal {
+    height: 60px; /* Can be reduced if empty or holding just a title */
+    padding: 0 var(--space-xl); 
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Keeps structure if elements are added back */
+    width: 100%;
+    background-color: var(--color-bg-main); /* Blends with page background */
+    border-bottom: 1px solid var(--border-color); 
+    flex-shrink: 0; 
+    margin-bottom: var(--space-lg); /* Space before actual page content */
+  }
+  
+  /* Placeholders to maintain flex structure if desired, can be removed if bar is truly empty */
+  .topbar-placeholder-left,
+  .topbar-placeholder-right {
+    flex-basis: 200px; /* Example width, adjust or remove */
+  }
