@@ -4,7 +4,7 @@ from botocore.exceptions import ClientError
 import json
 from dateutil import parser as date_parser
 import logging
-from decimal import Decimal, InvalidOperation 
+from decimal import Decimal, InvalidOperation
 import re
 
 logger = logging.getLogger(__name__)
@@ -82,7 +82,7 @@ class TextractService:
         next_token = None
         model_version = None
         warnings_list = []
-        MAX_PAGES_TO_FETCH = 10 
+        MAX_PAGES_TO_FETCH = 10
         pages_fetched = 0
         while pages_fetched < MAX_PAGES_TO_FETCH:
             pages_fetched += 1
@@ -123,14 +123,14 @@ class TextractService:
         try:
             cleaned_val = value_text.replace('$', '').replace('£', '').replace('€', '').strip()
             if ',' in cleaned_val and '.' in cleaned_val:
-                if cleaned_val.rfind(',') > cleaned_val.rfind('.'): 
+                if cleaned_val.rfind(',') > cleaned_val.rfind('.'):
                     cleaned_val = cleaned_val.replace('.', '').replace(',', '.')
-                else: 
+                else:
                     cleaned_val = cleaned_val.replace(',', '')
             elif ',' in cleaned_val:
                 if cleaned_val.count(',') == 1 and len(cleaned_val.split(',')[-1]) != 3 :
                      cleaned_val = cleaned_val.replace(',', '.')
-                else: 
+                else:
                      cleaned_val = cleaned_val.replace(',', '')
             if cleaned_val.startswith('(') and cleaned_val.endswith(')'):
                 cleaned_val = '-' + cleaned_val[1:-1]
@@ -147,35 +147,36 @@ class TextractService:
         logger.info(f"Attempting to parse {len(expense_documents)} ExpenseDocument(s) using AnalyzeExpense structure.")
         if not expense_documents or len(expense_documents) == 0:
             logger.warning("No ExpenseDocuments received to parse.")
-            return {} 
+            return {}
 
-        doc = expense_documents[0] 
-        
+        doc = expense_documents[0]
+
         extracted_data = {
             "vendor_name": None, "invoice_id_number": None, "invoice_date": None,
             "due_date": None, "total_amount": None, "subtotal": None, "tax": None,
             "currency": None, "line_items": [],
-            "parsed_data_detail": {"summary_fields_detected": {}, "errors": []}
+            "parsed_data_detail": {"summary_fields_detected": {}, "errors": []},
+            "full_textract_response": doc
         }
 
         summary_fields_raw = {}
-        summary_fields_upper_normalized = {} 
+        summary_fields_upper_normalized = {}
 
         for field in doc.get('SummaryFields', []):
             field_type_obj = field.get('Type', {})
             field_value_obj = field.get('ValueDetection', {})
-            field_type_text = field_type_obj.get('Text')    
+            field_type_text = field_type_obj.get('Text')
             field_value_text = field_value_obj.get('Text')
-            
+
             if field_type_text and field_value_text:
                 summary_fields_raw[field_type_text] = field_value_text
                 normalized_key = re.sub(r'[\s\.:\(\)#]', '_', field_type_text.upper()).replace('__', '_').strip('_')
                 summary_fields_upper_normalized[normalized_key] = field_value_text
                 logger.debug(f"Raw SummaryField: Type='{field_type_text}' -> NormalizedKey='{normalized_key}', Value='{field_value_text}'")
-        
+
         extracted_data["parsed_data_detail"]["summary_fields_detected"] = summary_fields_raw
         logger.debug(f"Normalized Summary Fields Upper for lookup: {summary_fields_upper_normalized}")
-        
+
         # --- Map Summary Fields using summary_fields_upper_normalized ---
         extracted_data["vendor_name"] = summary_fields_upper_normalized.get('VENDOR_NAME') or \
                                         summary_fields_upper_normalized.get('VENDOR') or \
@@ -194,11 +195,11 @@ class TextractService:
         inv_date_keys = ['INVOICE_RECEIPT_DATE', 'ISSUE_DATE', 'EXPENSE_DATE', 'DATE', 'TRANSACTION_DATE', 'INVOICE_DATE']
         raw_date_str = next((summary_fields_upper_normalized.get(key) for key in inv_date_keys if summary_fields_upper_normalized.get(key)), None)
         if raw_date_str:
-            try: 
+            try:
                 parsed_dt = date_parser.parse(raw_date_str, dayfirst=True if '/' in raw_date_str else False)
                 extracted_data["invoice_date"] = parsed_dt.strftime('%Y-%m-%d')
                 logger.debug(f"[DATE_PARSER_SUCCESS] Parsed Invoice Date: {extracted_data['invoice_date']} from raw '{raw_date_str}'")
-            except Exception as e: 
+            except Exception as e:
                 logger.warning(f"[DATE_PARSER_ERROR] For invoice_date from '{raw_date_str}': {e}")
                 extracted_data["parsed_data_detail"]["errors"].append(f"Date parsing error for invoice date: {raw_date_str}")
                 extracted_data["invoice_date"] = None # Ensure it's None if parsing fails
@@ -208,11 +209,11 @@ class TextractService:
 
         raw_due_date_str = summary_fields_upper_normalized.get('DUE_DATE') or summary_fields_upper_normalized.get('PAYMENT_DUE_DATE')
         if raw_due_date_str:
-            try: 
+            try:
                 parsed_dt = date_parser.parse(raw_due_date_str, dayfirst=True if '/' in raw_due_date_str else False)
                 extracted_data["due_date"] = parsed_dt.strftime('%Y-%m-%d')
                 logger.debug(f"[DATE_PARSER_SUCCESS] Parsed Due Date: {extracted_data['due_date']} from raw '{raw_due_date_str}'")
-            except Exception as e: 
+            except Exception as e:
                 logger.warning(f"[DATE_PARSER_ERROR] For due_date from '{raw_due_date_str}': {e}")
                 extracted_data["parsed_data_detail"]["errors"].append(f"Date parsing error for due date: {raw_due_date_str}")
                 extracted_data["due_date"] = None # Ensure it's None if parsing fails
@@ -231,10 +232,10 @@ class TextractService:
                 elif "usd" in text_to_check_currency or "$" in text_to_check_currency: extracted_data["currency"] = "USD"
                 elif "eur" in text_to_check_currency or "€" in text_to_check_currency: extracted_data["currency"] = "EUR"
                 logger.debug(f"Inferred Currency based on total string: {extracted_data['currency']}")
-        
+
         subtotal_str = summary_fields_upper_normalized.get('SUBTOTAL') or summary_fields_upper_normalized.get('SUB_TOTAL')
         if subtotal_str: extracted_data["subtotal"] = self._parse_decimal_from_textract_value(subtotal_str, "SUBTOTAL")
-        
+
         tax_str = summary_fields_upper_normalized.get('TAX') or summary_fields_upper_normalized.get('TOTAL_TAX_AMOUNT') or \
                   summary_fields_upper_normalized.get('VAT') or summary_fields_upper_normalized.get('GST')
         if tax_str: extracted_data["tax"] = self._parse_decimal_from_textract_value(tax_str, "TAX")
@@ -243,7 +244,7 @@ class TextractService:
             explicit_currency_str = summary_fields_upper_normalized.get('CURRENCY') or summary_fields_upper_normalized.get('CURRENCY_CODE')
             if explicit_currency_str: extracted_data["currency"] = explicit_currency_str.strip().upper()
             logger.debug(f"Currency from explicit field: {extracted_data['currency']}")
-        
+
         parsed_line_items = []
         for group_idx, group in enumerate(doc.get('LineItemGroups', [])):
             logger.debug(f"Processing LineItemGroupIndex: {group.get('LineItemGroupIndex', group_idx)}")
@@ -256,12 +257,12 @@ class TextractService:
                     item_field_value_text = item_field_value_obj.get('Text')
                     if item_field_type_text and item_field_value_text:
                         current_item_parsed["raw_fields"].append({"type": item_field_type_text, "value": item_field_value_text, "confidence": item_field_value_obj.get('Confidence')})
-                        item_field_type_upper = item_field_type_text.upper().replace(' ', '_') 
+                        item_field_type_upper = item_field_type_text.upper().replace(' ', '_')
                         if item_field_type_upper in ['ITEM', 'DESCRIPTION', 'SERVICE', 'PRODUCT_NAME']:
                             current_item_parsed['description'] = (current_item_parsed.get('description', '') + " " + item_field_value_text).strip() if current_item_parsed.get('description') else item_field_value_text
                         elif item_field_type_upper in ['PRODUCT_CODE', 'SKU', 'ITEM_CODE']:
                             current_item_parsed['product_code'] = item_field_value_text
-                        elif item_field_type_upper == 'PRICE': 
+                        elif item_field_type_upper == 'PRICE':
                             current_item_parsed['amount'] = self._parse_decimal_from_textract_value(item_field_value_text, "Line Item PRICE")
                         elif item_field_type_upper in ['QUANTITY', 'QTY', 'UNITS']:
                             current_item_parsed['quantity'] = self._parse_decimal_from_textract_value(item_field_value_text, "Line Item QTY")
@@ -269,7 +270,7 @@ class TextractService:
                             current_item_parsed['unit_price'] = self._parse_decimal_from_textract_value(item_field_value_text, "Line Item UNIT_PRICE")
                 if current_item_parsed.get('description') or current_item_parsed.get('amount') is not None or current_item_parsed.get('quantity') is not None:
                     parsed_line_items.append(current_item_parsed)
-                elif current_item_parsed["raw_fields"]: 
+                elif current_item_parsed["raw_fields"]:
                     logger.debug(f"Line item {item_idx} in group {group_idx} had only raw fields: {current_item_parsed['raw_fields']}")
         extracted_data["line_items"] = parsed_line_items
         extracted_data["parsed_data_detail"]["line_item_groups_raw_count"] = len(doc.get('LineItemGroups', []))
@@ -278,5 +279,5 @@ class TextractService:
             f"Date='{extracted_data['invoice_date']}', Total='{extracted_data['total_amount']}', "
             f"Inv#='{extracted_data['invoice_id_number']}', Currency='{extracted_data['currency']}', Items='{len(extracted_data['line_items'])}'"
         )
-        logger.debug(f"Full Refined parsed expense data object: {json.dumps(extracted_data, default=str, indent=2)}") 
+        logger.debug(f"Full Refined parsed expense data object: {json.dumps(extracted_data, default=str, indent=2)}")
         return extracted_data

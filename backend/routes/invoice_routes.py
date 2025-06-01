@@ -1,10 +1,23 @@
 # backend/routes/invoice_routes.py
 from flask import Blueprint, request, jsonify, current_app
 import os
-import uuid 
-import json 
+import uuid
+import json
 from decimal import Decimal
 import datetime # Import datetime to check for date/datetime objects
+
+ALLOWED_FIELDS = [
+    'vendor_name',
+    'invoice_id_number',
+    'invoice_date',
+    'due_date',
+    'total_amount',
+    'currency',
+    'vendor_phone',
+    'vendor_address',
+    'parsed_data',
+    'full_textract_response'
+]
 
 invoice_bp = Blueprint('invoice_bp', __name__)
 
@@ -12,18 +25,18 @@ invoice_bp = Blueprint('invoice_bp', __name__)
 def format_invoice_for_json(invoice_dict):
     if not invoice_dict:
         return None
-    
+
     formatted_invoice = {}
     for key, value in invoice_dict.items():
         if isinstance(value, Decimal):
             formatted_invoice[key] = float(value)
         elif key in ['invoice_date', 'due_date'] and isinstance(value, datetime.date):
             formatted_invoice[key] = value.isoformat() # YYYY-MM-DD
-        elif isinstance(value, datetime.datetime): 
-            formatted_invoice[key] = value.isoformat() 
+        elif isinstance(value, datetime.datetime):
+            formatted_invoice[key] = value.isoformat()
         else:
             formatted_invoice[key] = value
-            
+
     if 'line_items' in formatted_invoice and formatted_invoice['line_items']:
         try:
             line_items_data = json.loads(formatted_invoice['line_items']) if isinstance(formatted_invoice['line_items'], str) else formatted_invoice['line_items']
@@ -57,12 +70,12 @@ def upload_invoice_route():
     if not all([db_service, s3_service, textract_service]):
         current_app.logger.error("One or more services not available in /upload route.")
         return jsonify({"error": "Server configuration error, services not available."}), 503
-       
+
     current_app.logger.info("Upload endpoint hit")
     if 'file' not in request.files:
         current_app.logger.error("No file part in request")
         return jsonify({"error": "No file part"}), 400
-    
+
     file = request.files['file']
     if file.filename == '':
         current_app.logger.error("No selected file")
@@ -70,7 +83,7 @@ def upload_invoice_route():
 
     original_filename = file.filename
     current_app.logger.info(f"File received: {original_filename}")
-    
+
     invoice_record = None
     try:
         invoice_record = db_service.create_invoice_record(
@@ -101,9 +114,9 @@ def upload_invoice_route():
             return jsonify({"error": "File uploaded to S3, but failed to update database record with S3 info."}), 500
         current_app.logger.info(f"DB record updated for invoice ID {invoice_id} with S3 details.")
 
-        client_request_token = f"invox-{invoice_id}-{str(uuid.uuid4())}" 
+        client_request_token = f"invox-{invoice_id}-{str(uuid.uuid4())}"
         job_tag = f"InvoxAI-Invoice-{invoice_id}"
-        
+
         textract_job_id = textract_service.start_expense_analysis(
             s3_object_key=s3_object_key,
             client_request_token=client_request_token,
@@ -123,7 +136,7 @@ def upload_invoice_route():
             current_app.logger.error(f"Failed to update DB with Textract Job ID for invoice {invoice_id}.")
             return jsonify({"error": "Textract job started, but failed to update database record with Job ID."}), 500
         current_app.logger.info(f"DB record updated for invoice ID {invoice_id} with Textract JobId: {textract_job_id}, status 'processing_textract'.")
-        
+
         return jsonify({
             "message": f"File '{original_filename}' uploaded and Textract Expense Analysis initiated.",
             "invoice_id": invoice_id,
@@ -132,14 +145,14 @@ def upload_invoice_route():
             "textract_job_id": textract_job_id,
             "current_status": 'processing_textract'
         }), 202
-            
+
     except Exception as e:
         current_app.logger.error(f"Critical error during upload process for {original_filename}: {e}", exc_info=True)
-        db_service = current_app.extensions.get('db_service') 
+        db_service = current_app.extensions.get('db_service')
         if db_service and invoice_record and 'id' in invoice_record:
              db_service.update_invoice_status(invoice_record['id'], status='error', error_message=f"Upload processing error: {str(e)[:250]}")
         return jsonify({"error": "An internal error occurred during file upload processing."}), 500
-    
+
     return jsonify({"error": "File upload failed due to an unknown server issue"}), 500
 
 @invoice_bp.route("/<int:invoice_id>/process-textract-result", methods=["POST"])
@@ -158,7 +171,7 @@ def process_textract_result_route(invoice_id):
     if not textract_job_id: return jsonify({"error": "No Textract Job ID found."}), 400
     if current_db_status in ['processed', 'textract_failed', 'parsing_failed', 'db_update_failed_post_textract']:
         return jsonify({"message": f"Invoice already processed or failed: {current_db_status}", "data": format_invoice_for_json(invoice)}), 200
-    
+
     current_app.logger.info(f"Fetching Textract Expense results for Job ID: {textract_job_id} (Invoice ID: {invoice_id})")
     textract_response = textract_service.get_all_expense_results_paginated(textract_job_id)
     actual_job_status_from_textract = textract_response.get('JobStatus')
@@ -172,13 +185,16 @@ def process_textract_result_route(invoice_id):
         try:
             current_app.logger.info(f"Parsing {len(expense_docs)} ExpenseDocument(s) from Textract for invoice ID {invoice_id}")
             parsed_data = textract_service.parse_expense_data(expense_docs)
-            
-            # Pass parsed_data dictionary directly to update_invoice_parsed_data
+
+            # Filter parsed_data based on the whitelist
+            filtered_data = {k: v for k, v in parsed_data.items() if k in ALLOWED_FIELDS}
+
+            # Pass filtered_data dictionary directly to update_invoice_parsed_data
             # The DbService method will handle which fields to use.
             update_db_success = db_service.update_invoice_parsed_data(
                 invoice_id=invoice_id,
                 status='processed', # This is the primary status update
-                **parsed_data # Unpack all parsed fields as keyword arguments
+                **filtered_data # Unpack all parsed fields as keyword arguments
             )
 
             if update_db_success:
@@ -215,14 +231,14 @@ def get_invoices_route():
     try:
         limit = request.args.get('limit', 100, type=int) # Default to 100, can be overridden by query param
         offset = request.args.get('offset', 0, type=int)
-        
+
         current_app.logger.info(f"GET /api/invoices/ - Calling db_service.get_all_invoices(limit={limit}, offset={offset})")
         invoices_raw = db_service.get_all_invoices(limit=limit, offset=offset)
-        
+
         if invoices_raw is None: # Should return [] on error or no data, None is unexpected
             current_app.logger.error("db_service.get_all_invoices() returned None unexpectedly.")
             return jsonify({"error": "Database query failed to retrieve any invoices."}), 500
-        
+
         current_app.logger.info(f"GET /api/invoices/ - Fetched {len(invoices_raw)} raw invoice(s) from DB.")
         if invoices_raw: # Log a sample only if data exists
              current_app.logger.debug(f"GET /api/invoices/ - First raw invoice sample: {invoices_raw[0]}")
@@ -231,15 +247,15 @@ def get_invoices_route():
         if invoices_raw: # Only attempt to format if there are invoices
             for inv_raw in invoices_raw:
                 formatted = format_invoice_for_json(inv_raw) # Use the helper
-                if formatted: 
+                if formatted:
                     formatted_invoices.append(formatted)
                 else:
                     current_app.logger.warning(f"GET /api/invoices/ - Invoice ID {inv_raw.get('id')} resulted in None after formatting. Raw: {inv_raw}")
-        
+
         current_app.logger.info(f"GET /api/invoices/ - Returning {len(formatted_invoices)} formatted invoice(s).")
         if invoices_raw and len(formatted_invoices) < len(invoices_raw):
             current_app.logger.warning("GET /api/invoices/ - Some raw invoices were not formatted correctly and were excluded.")
-        
+
         return jsonify(formatted_invoices), 200
     except Exception as e:
         current_app.logger.error(f"Error in get_invoices_route: {e}", exc_info=True)

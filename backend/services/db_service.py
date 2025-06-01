@@ -23,10 +23,10 @@ def get_db_config():
         'password': current_app.config['DB_PASSWORD']
     }
     # Ensure port is an integer
-    if not config['port']: 
+    if not config['port']:
         config['port'] = 3306
     else:
-        try: 
+        try:
             config['port'] = int(config['port'])
         except (ValueError, TypeError): # Catch errors if port is not a valid number
             logger.error(f"Invalid DB_PORT value: {config['port']}. Using default 3306.")
@@ -75,14 +75,15 @@ class DbService:
 
     # Columns in the 'invoices' table that are populated from parsed Textract data
     INVOICE_TABLE_PARSED_COLUMNS = [
-        'vendor_name', 'invoice_id_number', 'invoice_date', 'due_date', 
-        'total_amount', 'subtotal', 'tax', 'currency', # Added subtotal, tax here for completeness if schema has them
-        'line_items', 'parsed_data', # 'parsed_data' stores the full raw JSON from Textract service
-        'user_category' 
+        'vendor_name', 'invoice_id_number', 'invoice_date', 'due_date',
+        'total_amount', 'subtotal', 'tax', 'currency',  # Added subtotal, tax here for completeness if schema has them
+        'line_items', 'parsed_data',  # 'parsed_data' stores the full raw JSON from Textract service
+        'user_category',
+        'full_textract_response'
     ]
     # Columns in 'invoices' table that are allowed to be updated via a generic PUT request (e.g., manual edits)
     INVOICE_TABLE_EDITABLE_COLUMNS = [
-        'vendor_name', 'invoice_id_number', 'invoice_date', 'due_date', 
+        'vendor_name', 'invoice_id_number', 'invoice_date', 'due_date',
         'total_amount', 'subtotal', 'tax', 'currency', # Added subtotal, tax
         'user_category', 'status', 'error_message'
     ]
@@ -110,14 +111,14 @@ class DbService:
         conn = None; cursor = None; result = None
         try:
             conn = get_db() # Gets a connection from the request context pool
-            if conn is None: 
+            if conn is None:
                 logger.error("execute_query: Database connection not available.")
                 raise Error("Database connection not available for query execution.")
-            
+
             # Use dictionary cursor for SELECT queries for easier access to columns by name
             use_dictionary_cursor = (fetch_one or fetch_all) and not is_insert
             cursor = conn.cursor(dictionary=use_dictionary_cursor)
-            
+
             logger.debug(f"Executing SQL query: {query} with params: {params}")
             cursor.execute(query, params)
 
@@ -186,7 +187,7 @@ class DbService:
         sql = "UPDATE invoices SET s3_bucket_name = %s, s3_key = %s, status = %s, error_message = NULL WHERE id = %s"
         try: return self.execute_query(sql, (s3_bucket, s3_key, status, invoice_id)) > 0
         except Error: return False
-            
+
     def update_invoice_parsed_data(self, invoice_id, status='processed', **parsed_fields):
         """
         Updates an invoice with data extracted by Textract (from parse_expense_data).
@@ -205,7 +206,7 @@ class DbService:
                 # For JSON columns (line_items, parsed_data), ensure Decimals are serializable.
                 if key in ['total_amount', 'subtotal', 'tax'] and isinstance(value, Decimal):
                     params_sql.append(value) # Store as Decimal
-                elif key in ['line_items'] and value is not None: # For line_items to be stored as JSON
+                elif key in ['line_items', 'full_textract_response'] and value is not None: # For line_items to be stored as JSON
                     params_sql.append(json.dumps(value, default=str)) # default=str handles Decimals in list
                 else:
                     params_sql.append(value)
@@ -213,19 +214,19 @@ class DbService:
                 fields_to_update_sql.append("`parsed_data` = %s")
                 params_sql.append(json.dumps(value, default=str)) # default=str for any Decimals within
 
-        if not fields_to_update_sql and 'parsed_data_detail' not in parsed_fields: 
+        if not fields_to_update_sql and 'parsed_data_detail' not in parsed_fields:
              logger.info(f"No specific schema fields from parser to update for invoice ID {invoice_id}, only status.")
-        
+
         fields_to_update_sql.append("`status` = %s"); params_sql.append(status)
         fields_to_update_sql.append("`error_message` = NULL") # Clear any previous processing error
-        
+
         sql = f"UPDATE invoices SET {', '.join(fields_to_update_sql)} WHERE id = %s"
         params_sql.append(invoice_id)
 
         try:
             logger.debug(f"Updating parsed data for invoice {invoice_id}. PARAMS (types before DB): {[(type(p), p) for p in params_sql]}")
             return self.execute_query(sql, tuple(params_sql)) > 0
-        except Error as e: 
+        except Error as e:
             try: self.update_invoice_status(invoice_id, status='db_update_failed_post_textract', error_message=f"DB update error: {str(e)[:200]}")
             except: pass # Avoid error in error handling
             return False
@@ -238,13 +239,13 @@ class DbService:
             if key in self.INVOICE_TABLE_EDITABLE_COLUMNS:
                 set_clauses.append(f"`{key}` = %s")
                 if key in ['total_amount', 'subtotal', 'tax'] and value is not None: # Handle potential string input for amounts
-                    try: params.append(Decimal(str(value))) 
-                    except InvalidOperation: logger.error(f"Invalid amount value '{value}' for field '{key}' in update_invoice_fields."); return False 
+                    try: params.append(Decimal(str(value)))
+                    except InvalidOperation: logger.error(f"Invalid amount value '{value}' for field '{key}' in update_invoice_fields."); return False
                 else: params.append(value) # Other fields (dates, strings) as is
             else: logger.warning(f"Attempted to update disallowed field '{key}' via update_invoice_fields.")
         if not set_clauses: return False
         sql = f"UPDATE invoices SET {', '.join(set_clauses)} WHERE id = %s"; params.append(invoice_id)
-        try: 
+        try:
             logger.debug(f"Updating invoice fields for ID {invoice_id} with SQL: {sql} and PARAMS: {params}")
             return self.execute_query(sql, tuple(params)) > 0
         except Error: return False # Error logged by execute_query
@@ -279,7 +280,7 @@ class DbService:
         except Error: return []
     def get_invoices_by_filter(self, filters, limit=5, offset=0): # ... (no changes from last full version)
         if not isinstance(filters, dict): logger.error("get_invoices_by_filter: filters must be a dict."); return []
-        where_clauses = []; params = [] 
+        where_clauses = []; params = []
         has_specific_status_filter = False
         if filters.get('status_exact_match'): where_clauses.append("`status` = %s"); params.append(filters['status_exact_match']); has_specific_status_filter = True
         elif filters.get('status_like_match'): where_clauses.append("`status` LIKE %s"); params.append(filters['status_like_match']); has_specific_status_filter = True
@@ -288,14 +289,14 @@ class DbService:
         if filters.get('vendor_name_like'): where_clauses.append("`vendor_name` LIKE %s"); params.append(f"%{filters['vendor_name_like']}%")
         if filters.get('user_category_like'): where_clauses.append("`user_category` LIKE %s"); params.append(f"%{filters['user_category_like']}%")
         if filters.get('invoice_date_exact'): where_clauses.append("`invoice_date` = %s"); params.append(filters['invoice_date_exact'])
-        else: 
+        else:
             if filters.get('invoice_date_start'): where_clauses.append("`invoice_date` >= %s"); params.append(filters['invoice_date_start'])
             if filters.get('invoice_date_end'): where_clauses.append("`invoice_date` <= %s"); params.append(filters['invoice_date_end'])
         if filters.get('total_amount_gt') is not None: where_clauses.append("`total_amount` > %s"); params.append(Decimal(str(filters['total_amount_gt'])))
         if filters.get('total_amount_lt') is not None: where_clauses.append("`total_amount` < %s"); params.append(Decimal(str(filters['total_amount_lt'])))
         base_sql = "SELECT id, original_filename, vendor_name, invoice_date, total_amount, currency, user_category, status FROM invoices" # Select specific fields
         if where_clauses: base_sql += " WHERE " + " AND ".join(where_clauses)
-        order_by_clause = filters.get('order_by', 'invoice_date DESC, id DESC') 
+        order_by_clause = filters.get('order_by', 'invoice_date DESC, id DESC')
         allowed_sort_cols = ['upload_timestamp', 'invoice_date', 'total_amount', 'vendor_name', 'status', 'id']
         sort_col_candidate = order_by_clause.split(' ')[0].lower(); sort_dir_candidate = order_by_clause.split(' ')[-1].upper() if len(order_by_clause.split(' ')) > 1 else 'DESC'
         if sort_col_candidate not in allowed_sort_cols or sort_dir_candidate not in ['ASC', 'DESC']: order_by_clause = 'invoice_date DESC, id DESC'
@@ -303,10 +304,10 @@ class DbService:
         base_sql += " LIMIT %s OFFSET %s"; params.extend([limit, offset])
         try:
             logger.debug(f"Executing get_invoices_by_filter query: {base_sql} with params: {params}")
-            results = self.execute_query(base_sql, tuple(params), fetch_all=True)
+            results = self.execute_query(sql, tuple(params), fetch_all=True)
             if results:
                 for row in results: # Convert Decimal to float for easier JSON handling if needed
-                    if row.get('total_amount') is not None and isinstance(row['total_amount'], Decimal): row['total_amount'] = float(row['total_amount']) 
+                    if row.get('total_amount') is not None and isinstance(row['total_amount'], Decimal): row['total_amount'] = float(row['total_amount'])
                     if row.get('invoice_date') is not None and isinstance(row['invoice_date'], date): row['invoice_date'] = row['invoice_date'].isoformat()
             return results if results else []
         except Error: return []
@@ -350,12 +351,12 @@ class DbService:
             logger.debug(f"Executing get_invoices_for_report query: {sql} with params: {params}")
             invoices = self.execute_query(sql, tuple(params), fetch_all=True)
             if invoices:
-                for inv in invoices: 
+                for inv in invoices:
                     if inv.get('total_amount') is not None and isinstance(inv['total_amount'], Decimal): inv['total_amount'] = float(inv['total_amount'])
                     if inv.get('invoice_date') and isinstance(inv['invoice_date'], date): inv['invoice_date'] = inv['invoice_date'].isoformat()
                     if inv.get('due_date') and isinstance(inv['due_date'], date): inv['due_date'] = inv['due_date'].isoformat()
-                    if inv.get('line_items') and isinstance(inv['line_items'], str): 
-                        try: 
+                    if inv.get('line_items') and isinstance(inv['line_items'], str):
+                        try:
                             line_items_data = json.loads(inv['line_items'])
                             if isinstance(line_items_data, list):
                                 for item in line_items_data:
@@ -363,11 +364,11 @@ class DbService:
                                         for k_li, v_li in item.items():
                                             if isinstance(v_li, Decimal): item[k_li] = float(v_li)
                             inv['line_items'] = line_items_data
-                        except: inv['line_items'] = [] 
+                        except: inv['line_items'] = []
             return invoices if invoices else []
         except Error as e: logger.error(f"Error fetching invoices for report data: {e}", exc_info=True); return []
 
-    def delete_invoice_by_id(self, invoice_id): 
+    def delete_invoice_by_id(self, invoice_id):
         sql = "DELETE FROM invoices WHERE id = %s"
         try:
             rows_affected = self.execute_query(sql, (invoice_id,))
