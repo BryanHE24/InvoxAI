@@ -150,6 +150,94 @@ mysql -u root -p
 mysql -u root -p < backend/database/schema.sql
 ```
 
+## AWS S3 and Textract Setup
+
+InvoxAI uses Amazon S3 to store uploaded invoices and Amazon Textract to extract structured financial data.
+
+### 1. Create an S3 Bucket
+Create a private S3 bucket in the AWS Console:
+
+* **Region:** `us-east-1`
+* Keep **Block all public access** enabled.
+* Use a globally unique name, such as `invoxai-yourname-demo`.
+
+### 2. Create an IAM Policy
+Create an IAM policy with permissions limited to your bucket. Replace `YOUR_BUCKET_NAME` with the actual bucket name:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AccessInvoiceBucket",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucketLocation"
+      ],
+      "Resource": "arn:aws:s3:::YOUR_BUCKET_NAME"
+    },
+    {
+      "Sid": "ManageInvoiceFiles",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::YOUR_BUCKET_NAME/invoices/*"
+    },
+    {
+      "Sid": "AnalyzeInvoices",
+      "Effect": "Allow",
+      "Action": [
+        "textract:StartExpenseAnalysis",
+        "textract:GetExpenseAnalysis"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+Attach this policy to a dedicated IAM user and create an access key for an application running outside AWS.
+
+### 3. Configure Environment Variables
+Add the credentials to `backend/.env`:
+
+```env
+AWS_ACCESS_KEY_ID=your_access_key_id
+AWS_SECRET_ACCESS_KEY=your_secret_access_key
+AWS_REGION=us-east-1
+S3_BUCKET_NAME=your_bucket_name
+```
+
+> **Warning:** Never commit the `.env` file or expose AWS credentials in the frontend.
+
+Restart Flask after modifying the environment:
+
+```bash
+flask --app 'backend.app:create_app()' run --debug
+```
+
+Verify the integration:
+
+```bash
+curl http://127.0.0.1:5000/api/health
+```
+
+The response should report:
+
+```json
+{
+  "services": {
+    "s3_service": "OK",
+    "textract_service": "OK"
+  }
+}
+```
+
+You can now upload a PDF, PNG, or JPG invoice. InvoxAI stores the original document in S3 and starts an asynchronous Textract `AnalyzeExpense` job.
+
 #### d. Environment Configuration
 
 Create `backend/.env`:
